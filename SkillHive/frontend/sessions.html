@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sessions - SkillHive</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.navbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;flex-wrap:wrap;gap:10px}
+.navbar-links{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.navbar-links a{text-decoration:none;color:var(--text-color)}
+.navbar-links a.active{color:var(--primary)}
+.page{max-width:900px;margin:30px auto;padding:0 16px}
+.page .card{margin-bottom:18px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row>*{flex:1;min-width:140px}
+.tabs{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap}
+.item{padding:12px 0;border-bottom:1px solid var(--border-color)}
+.item:last-child{border-bottom:0}
+.muted{color:var(--text-muted)}
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <a class="navbar-brand" href="dashboard.html">SkillHive</a>
+  <div class="navbar-links">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="matches.html">Matches</a>
+    <a href="skills.html">My Skills</a>
+    <a href="connections.html">Connections</a>
+    <a href="sessions.html" class="active">Sessions</a>
+    <a href="reviews.html">Reviews</a>
+    <a href="profile.html">Profile</a>
+    <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+    <button class="btn btn-outline" onclick="logout()">Logout</button>
+  </div>
+</nav>
+<div id="toast-container"></div>
+
+<div class="page">
+  <h1>Sessions</h1>
+  <div class="card">
+    <h2>Schedule a session</h2>
+    <div class="row">
+      <div class="form-group"><label>Connection</label><select id="conn" onchange="fillSkills()" style="width:100%"></select></div>
+      <div class="form-group"><label>Skill</label><select id="skill" style="width:100%"></select></div>
+    </div>
+    <div class="row">
+      <div class="form-group"><label>Date</label><input type="date" id="date" style="width:100%"></div>
+      <div class="form-group"><label>Time</label><input type="time" id="time" style="width:100%"></div>
+    </div>
+    <div class="row">
+      <div class="form-group"><label>Mode</label>
+        <select id="mode" style="width:100%"><option value="online">Online</option><option value="in-person">In person</option></select>
+      </div>
+      <div class="form-group"><label>Meeting link (optional)</label><input id="link" placeholder="https://meet.google.com/..." style="width:100%"></div>
+    </div>
+    <button class="btn btn-primary" onclick="create()">Schedule session</button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="card" id="list">Loading...</div>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+let OPT=[],ALL=[],TAB="scheduled";
+const NAMES={scheduled:"Upcoming",completed:"Completed",cancelled:"Cancelled"};
+
+function esc(s){return String(s==null?"":s).replace(/[&<>"\x27]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[c]));}
+
+function fillSkills(){
+  const c=OPT.find(o=>o.connection_id==document.getElementById("conn").value);
+  document.getElementById("skill").innerHTML=c&&c.skills.length
+    ?c.skills.map(s=>'<option value="'+s.skill_id+'|'+s.teacher_id+'">'+esc(s.label)+'</option>').join("")
+    :'<option value="">No skills available</option>';
+}
+
+async function create(){
+  const sv=document.getElementById("skill").value;
+  if(!sv){showToast("Choose a skill first.","error");return;}
+  const p=sv.split("|");
+  const r=await api("sessions/create.php","POST",{
+    connection_id:+document.getElementById("conn").value,
+    skill_id:+p[0],
+    teacher_id:+p[1],
+    session_date:document.getElementById("date").value,
+    session_time:document.getElementById("time").value,
+    mode:document.getElementById("mode").value,
+    meeting_link:document.getElementById("link").value
+  });
+  showToast(r.message,r.success?"success":"error");
+  if(r.success)loadList();
+}
+
+async function act(id,action){
+  if(action==="cancel"&&!confirm("Cancel this session?"))return;
+  const r=await api("sessions/action.php","POST",{session_id:id,action:action});
+  showToast(r.message,r.success?"success":"error");
+  loadList();
+}
+
+function setTab(t){TAB=t;render();}
+
+function render(){
+  document.getElementById("tabs").innerHTML=Object.keys(NAMES).map(k=>
+    '<button class="btn '+(k===TAB?'btn-primary':'btn-outline')+' btn-sm" onclick="setTab(\''+k+'\')">'+NAMES[k]+' ( '+ALL.filter(s=>s.status===k).length+' )</button>'
+  ).join("");
+  const L=ALL.filter(s=>s.status===TAB);
+  document.getElementById("list").innerHTML=L.length?L.map(s=>{
+    let a="";
+    if(s.status==="scheduled"){
+      a=(s.my_confirmed
+        ?'<span class="badge">You confirmed. Waiting for '+esc(s.other_name)+'</span>'
+        :'<button class="btn btn-primary btn-sm" onclick="act('+s.id+',\'complete\')">Mark complete</button>')
+        +' <button class="btn btn-danger-outline btn-sm" onclick="act('+s.id+',\'cancel\')">Cancel</button>';
+      if(!s.my_confirmed&&s.other_confirmed)a='<span class="badge">'+esc(s.other_name)+' confirmed</span> '+a;
+    }
+    if(s.status==="completed"){
+      a=s.reviewed
+        ?'<span class="badge">Reviewed</span>'
+        :'<a class="btn btn-primary btn-sm" href="reviews.html?session='+s.id+'">Write review</a>';
+    }
+    return '<div class="item"><div class="flex-between"><strong>'+esc(s.skill)+' with '+esc(s.other_name)+'</strong><span class="badge">'+(s.role==="teacher"?"You teach":"You learn")+'</span></div>'
+      +'<div class="muted">'+esc(s.session_date)+' · '+esc(String(s.session_time).slice(0,5))+' · '+esc(s.mode)+'</div>'
+      +(s.meeting_link?'<div><a href="'+esc(s.meeting_link)+'" target="_blank" rel="noopener">Meeting link</a></div>':'')
+      +'<div style="margin-top:8px">'+a+'</div></div>';
+  }).join(""):'<div class="empty-state">No '+NAMES[TAB].toLowerCase()+' sessions.'+(TAB==="scheduled"?' Schedule one above.':'')+'</div>';
+}
+
+async function loadList(){
+  const r=await api("sessions/list.php","GET");
+  ALL=(r.data&&r.data.sessions)||[];
+  render();
+}
+
+async function init(){
+  const r=await api("sessions/options.php","GET");
+  OPT=(r.data&&r.data.connections)||[];
+  document.getElementById("conn").innerHTML=OPT.length
+    ?OPT.map(o=>'<option value="'+o.connection_id+'">'+esc(o.name)+'</option>').join("")
+    :'<option value="">No accepted connections yet</option>';
+  fillSkills();
+  loadList();
+}
+
+async function boot(){
+  initTheme();
+  const r=await api("auth/me.php","GET");
+  if(!r.success){location.href="login.html";return;}
+  const u=r.data.user||r.data;
+  if(u.onboarding_complete==0){location.href="onboarding.html";return;}
+  init();
+}
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activity - SkillHive</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a class="navbar-brand" href="admin.html">SkillHive</a>
+    <div class="navbar-links">
+      <a href="admin.html">Admin</a>
+      <a href="admin-activity.html" class="active">Activity</a>
+      <a href="profile.html">Profile</a>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9680;</button>
+    <button class="btn btn-outline" onclick="logout()">Logout</button>
+  </nav>
+
+  <div class="container">
+    <h1>Activity</h1>
+
+    <div class="card">
+      <h2>Connections</h2>
+      <div id="connections" style="overflow-x:auto;">Loading...</div>
+    </div>
+
+    <div class="card">
+      <h2>Sessions</h2>
+      <div id="sessions" style="overflow-x:auto;">Loading...</div>
+    </div>
+
+    <div class="card">
+      <h2>Reviews</h2>
+      <div id="reviews" style="overflow-x:auto;">Loading...</div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="js/common.js"></script>
+  <script>
+    function esc(v) {
+      if (v === null || v === undefined || v === "") return "-";
+      return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function table(headers, rows) {
+      if (!rows.length) return '<div class="empty-state">Nothing here yet.</div>';
+      let h = "<table><thead><tr>";
+      headers.forEach(function (x) { h += "<th>" + x + "</th>"; });
+      h += "</tr></thead><tbody>";
+      rows.forEach(function (r) {
+        h += "<tr>";
+        r.forEach(function (c) { h += "<td>" + c + "</td>"; });
+        h += "</tr>";
+      });
+      return h + "</tbody></table>";
+    }
+
+    function badge(text) {
+      return '<span class="badge">' + esc(text) + "</span>";
+    }
+
+    function stars(n) {
+      n = parseInt(n, 10) || 0;
+      return "&#9733;".repeat(n) + "&#9734;".repeat(Math.max(0, 5 - n)) + " (" + n + "/5)";
+    }
+
+    async function boot() {
+      initTheme();
+      const user = await requireLogin();
+      if (!user) return;
+      if (user.role !== "admin") { window.location.href = "dashboard.html"; return; }
+
+      const r = await api("/admin/activity.php");
+      if (!r.success) {
+        showToast(r.message || "Could not load activity", "error");
+        ["connections", "sessions", "reviews"].forEach(function (id) {
+          document.getElementById(id).innerHTML = '<div class="empty-state">Could not load.</div>';
+        });
+        return;
+      }
+      const d = r.data;
+
+      document.getElementById("connections").innerHTML = table(
+        ["Student", "Connected with", "Status"],
+        d.connections.map(function (c) {
+          return [esc(c.requester_name), esc(c.receiver_name), badge(c.status)];
+        })
+      );
+
+      document.getElementById("sessions").innerHTML = table(
+        ["Date", "Time", "Teacher", "Learner", "Skill", "Mode", "Status"],
+        d.sessions.map(function (s) {
+          return [esc(s.session_date), esc(s.session_time), esc(s.teacher_name),
+                  esc(s.learner_name), esc(s.skill_name), esc(s.mode), badge(s.status)];
+        })
+      );
+
+      document.getElementById("reviews").innerHTML = table(
+        ["From", "To", "Skill", "Rating", "Feedback"],
+        d.reviews.map(function (v) {
+          return [esc(v.reviewer_name), esc(v.reviewee_name), esc(v.skill_name),
+                  stars(v.rating), esc(v.feedback)];
+        })
+      );
+    }
+    boot();
+  </script>
+</body>
+</html>

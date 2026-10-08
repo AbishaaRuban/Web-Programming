@@ -1,0 +1,21 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Dashboard - SkillHive</title><link rel="stylesheet" href="css/style.css"><style>.navbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;flex-wrap:wrap;gap:10px}.navbar-links{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.navbar-links a{text-decoration:none;color:var(--text-color)}.navbar-links a.active{color:var(--primary)}.page{max-width:900px;margin:30px auto;padding:0 16px}.page .card{margin-bottom:18px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row>*{flex:1;min-width:140px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}.big{font-size:28px;font-weight:700}.tabs{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap}.item{padding:12px 0;border-bottom:1px solid var(--border-color)}.item:last-child{border-bottom:0}.muted{color:var(--text-muted)}.chip{display:inline-block;padding:4px 10px;margin:3px;border:1px solid var(--border-color);border-radius:20px;font-size:13px}.chip button{background:none;border:0;color:var(--danger);cursor:pointer}</style></head><body>
+<nav class="navbar"><a class="navbar-brand" href="dashboard.html">SkillHive</a><div class="navbar-links"><a href="dashboard.html" class="active">Dashboard</a><a href="matches.html">Matches</a><a href="skills.html">My Skills</a><a href="connections.html">Connections</a><a href="sessions.html">Sessions</a><a href="reviews.html">Reviews</a><a href="profile.html">Profile</a><button class="theme-toggle" onclick="toggleTheme()">🌓</button><button class="btn btn-outline" onclick="logout()">Logout</button></div></nav><div id="toast-container"></div>
+<div class="page"><h1 id="hello">Welcome!</h1>
+<div class="grid" id="stats"></div>
+<div class="card" style="margin-top:18px"><div class="flex-between"><h2>Top matches</h2><a href="matches.html">See all</a></div><div id="top">Loading...</div></div>
+<div class="card"><div class="flex-between"><h2>Upcoming sessions</h2><a href="sessions.html">Manage</a></div><div id="up">Loading...</div></div></div>
+<script src="js/common.js"></script><script>
+async function init(u){
+  document.getElementById("hello").textContent="Welcome, "+(u.name||"")+"!";
+  const r=await api("dashboard/summary.php","GET");const d=r.data||{};
+  const S=[["Matches",d.matches_count],["Requests waiting",d.pending_requests],["Upcoming sessions",d.upcoming_count],["Completed sessions",d.completed_count],["Average rating",d.avg_rating||"-"],["Reviews to write",d.pending_reviews]];
+  document.getElementById("stats").innerHTML=S.map(x=>'<div class="card"><div class="muted">'+x[0]+'</div><div class="big">'+(x[1]==null?0:x[1])+'</div></div>').join("");
+  const t=d.top_matches||[];
+  document.getElementById("top").innerHTML=t.length?t.map(m=>'<div class="item flex-between"><span><strong>'+esc(m.name)+'</strong> <span class="badge">'+esc(m.match_type)+'</span><div class="muted">'+esc(m.reasons[0]||"")+'</div></span><span class="badge">'+m.score+'%</span></div>').join(""):'<div class="empty-state">No matches yet. Add more skills on My Skills.</div>';
+  const up=d.upcoming||[];
+  document.getElementById("up").innerHTML=up.length?up.map(s=>'<div class="item"><strong>'+esc(s.skill)+'</strong> with '+esc(s.other_name)+' <span class="muted">'+esc(s.session_date)+' '+esc(String(s.session_time).slice(0,5))+'</span></div>').join(""):'<div class="empty-state">No upcoming sessions.</div>';
+}
+async function boot(){initTheme();const r=await api("auth/me.php","GET");if(!r.success){location.href="login.html";return;}const u=r.data.user||r.data;if(u.onboarding_complete==0){location.href="onboarding.html";return;}init(u);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"\x27]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[c]));}
+boot();
+</script></body></html>

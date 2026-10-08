@@ -1,0 +1,21 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Connections - SkillHive</title><link rel="stylesheet" href="css/style.css"><style>.navbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;flex-wrap:wrap;gap:10px}.navbar-links{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.navbar-links a{text-decoration:none;color:var(--text-color)}.navbar-links a.active{color:var(--primary)}.page{max-width:900px;margin:30px auto;padding:0 16px}.page .card{margin-bottom:18px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row>*{flex:1;min-width:140px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}.big{font-size:28px;font-weight:700}.tabs{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap}.item{padding:12px 0;border-bottom:1px solid var(--border-color)}.item:last-child{border-bottom:0}.muted{color:var(--text-muted)}.chip{display:inline-block;padding:4px 10px;margin:3px;border:1px solid var(--border-color);border-radius:20px;font-size:13px}.chip button{background:none;border:0;color:var(--danger);cursor:pointer}</style></head><body>
+<nav class="navbar"><a class="navbar-brand" href="dashboard.html">SkillHive</a><div class="navbar-links"><a href="dashboard.html">Dashboard</a><a href="matches.html">Matches</a><a href="skills.html">My Skills</a><a href="connections.html" class="active">Connections</a><a href="sessions.html">Sessions</a><a href="reviews.html">Reviews</a><a href="profile.html">Profile</a><button class="theme-toggle" onclick="toggleTheme()">🌓</button><button class="btn btn-outline" onclick="logout()">Logout</button></div></nav><div id="toast-container"></div>
+<div class="page"><h1>Connections</h1>
+<div class="card"><h2>Requests for you</h2><div id="inc">Loading...</div></div>
+<div class="card"><h2>Requests you sent</h2><div id="out">Loading...</div></div>
+<div class="card"><h2>My connections</h2><div id="acc">Loading...</div></div></div>
+<script src="js/common.js"></script><script>
+async function act(id,action){const r=await api("connections/respond.php","POST",{connection_id:id,action});showToast(r.message,r.success?"success":"error");load();}
+const who=c=>'<strong>'+esc(c.name)+'</strong> <span class="muted">'+esc(c.department)+(c.year?' · '+esc(c.year):'')+'</span>';
+function fill(id,items,empty,btns){document.getElementById(id).innerHTML=items.length?items.map(c=>'<div class="item flex-between"><span>'+who(c)+'</span><span class="flex-gap">'+btns(c)+'</span></div>').join(""):'<div class="empty-state">'+empty+'</div>';}
+async function load(){
+  const r=await api("connections/list.php","GET");const d=r.data||{accepted:[],incoming:[],outgoing:[]};
+  fill("inc",d.incoming,"No requests right now.",c=>'<button class="btn btn-primary btn-sm" onclick="act('+c.id+',\'accept\')">Accept</button><button class="btn btn-danger-outline btn-sm" onclick="act('+c.id+',\'reject\')">Reject</button>');
+  fill("out",d.outgoing,"You have not sent any requests.",c=>'<button class="btn btn-danger-outline btn-sm" onclick="act('+c.id+',\'cancel\')">Cancel</button>');
+  fill("acc",d.accepted,"No connections yet. Connect with someone from Matches.",c=>'<a class="btn btn-primary btn-sm" href="sessions.html">Schedule session</a>');
+}
+function init(){load();}
+async function boot(){initTheme();const r=await api("auth/me.php","GET");if(!r.success){location.href="login.html";return;}const u=r.data.user||r.data;if(u.onboarding_complete==0){location.href="onboarding.html";return;}init(u);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"\x27]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[c]));}
+boot();
+</script></body></html>

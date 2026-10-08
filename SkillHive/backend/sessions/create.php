@@ -1,0 +1,30 @@
+<?php
+require_once __DIR__ . '/../config/db.php';
+$db = $pdo ?? ($conn ?? null);
+$userId = requireAuth();
+$body = getJsonBody();
+$cid = (int)($body['connection_id'] ?? 0);
+$skillId = (int)($body['skill_id'] ?? 0);
+$teacherId = (int)($body['teacher_id'] ?? 0);
+$date = trim($body['session_date'] ?? '');
+$time = trim($body['session_time'] ?? '');
+$mode = $body['mode'] ?? '';
+$link = trim($body['meeting_link'] ?? '');
+$st = $db->prepare("SELECT * FROM connections WHERE id = ? AND status = 'accepted' AND (requester_id = ? OR receiver_id = ?)");
+$st->execute([$cid, $userId, $userId]);
+$c = $st->fetch();
+if (!$c) respond(false, null, 'Choose one of your accepted connections.');
+$other = $c['requester_id'] == $userId ? $c['receiver_id'] : $c['requester_id'];
+if ($teacherId != $userId && $teacherId != $other) respond(false, null, 'Invalid teacher.');
+$learnerId = $teacherId == $userId ? $other : $userId;
+$st = $db->prepare("SELECT id FROM user_skills WHERE user_id = ? AND skill_id = ?");
+$st->execute([$teacherId, $skillId]);
+if (!$st->fetch()) respond(false, null, 'That person does not teach this skill.');
+$d = DateTime::createFromFormat('Y-m-d', $date);
+if (!$d || $d->format('Y-m-d') !== $date) respond(false, null, 'Choose a valid date.');
+if (!preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $time)) respond(false, null, 'Choose a valid time.');
+if (!in_array($mode, ['online', 'in-person'], true)) respond(false, null, 'Choose online or in-person.');
+if (strlen($link) > 255) respond(false, null, 'Meeting link is too long.');
+$db->prepare("INSERT INTO sessions (connection_id, teacher_id, learner_id, skill_id, session_date, session_time, mode, meeting_link) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+   ->execute([$cid, $teacherId, $learnerId, $skillId, $date, $time, $mode, $link]);
+respond(true, null, 'Session scheduled.');

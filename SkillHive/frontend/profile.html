@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Profile - SkillHive</title>
+<link rel="stylesheet" href="css/style.css">
+<style>.navbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;flex-wrap:wrap;gap:10px}.navbar-links{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.navbar-links a{text-decoration:none;color:var(--text-color)}.navbar-links a.active{color:var(--primary)}.page{max-width:900px;margin:30px auto;padding:0 16px}.page .card{margin-bottom:18px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row>*{flex:1;min-width:140px}.stars button{background:none;border:0;font-size:30px;cursor:pointer;color:var(--border-color);padding:0 2px}.stars button.on{color:#f5b301}.item{padding:12px 0;border-bottom:1px solid var(--border-color)}.item:last-child{border-bottom:0}.muted{color:var(--text-muted)}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border-color);font-size:14px}.hl{border-color:var(--primary)!important}</style>
+</head><body>
+<nav class="navbar"><a class="navbar-brand" href="dashboard.html">SkillHive</a><div class="navbar-links">
+<a href="dashboard.html">Dashboard</a><a href="matches.html">Matches</a><a href="skills.html">My Skills</a><a href="connections.html">Connections</a><a href="sessions.html">Sessions</a><a href="reviews.html">Reviews</a><a href="profile.html" class="active">Profile</a>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button><button class="btn btn-outline" onclick="logout()">Logout</button></div></nav>
+<div id="toast-container"></div>
+<div class="page">
+<h1>Profile</h1>
+<div class="card"><div class="flex-between"><h2>Your information</h2><button class="btn btn-outline btn-sm" id="editBtn" onclick="setEdit(true)">Edit</button></div>
+ <div class="form-group"><label>Name</label><input id="name" disabled style="width:100%"></div>
+ <div class="form-group"><label>Email</label><input id="email" disabled style="width:100%"></div>
+ <div class="row"><div class="form-group"><label>Department</label><input id="department" disabled style="width:100%"></div>
+ <div class="form-group"><label>Year</label><input id="year" disabled style="width:100%"></div></div>
+ <div class="form-group"><label>Preferred mode</label><select id="mode" disabled style="width:100%"><option value="online">Online</option><option value="in-person">In person</option><option value="both">Both</option></select></div>
+ <div class="form-group"><label>Bio</label><textarea id="bio" rows="3" disabled style="width:100%"></textarea></div>
+ <div id="editActions" style="display:none" class="flex-gap"><button class="btn btn-primary" onclick="save()">Save changes</button><button class="btn btn-outline" onclick="cancelEdit()">Cancel</button></div></div>
+<div class="card"><h2>Change password</h2>
+ <div class="form-group"><label>Current password</label><input type="password" id="cur" style="width:100%"></div>
+ <div class="form-group"><label>New password (at least 8 characters)</label><input type="password" id="new1" style="width:100%"></div>
+ <div class="form-group"><label>Confirm new password</label><input type="password" id="new2" style="width:100%"></div>
+ <button class="btn btn-primary" onclick="changePw()">Change password</button></div>
+</div>
+<script src="js/common.js"></script>
+<script>
+const F=["name","department","year","bio"];let saved={};
+function setEdit(on){["name","department","year","bio","mode"].forEach(i=>document.getElementById(i).disabled=!on);document.getElementById("editActions").style.display=on?"flex":"none";document.getElementById("editBtn").style.display=on?"none":"inline-block";}
+function fill(u){saved=u;F.forEach(i=>document.getElementById(i).value=u[i]||"");document.getElementById("email").value=u.email||"";document.getElementById("mode").value=u.mode_preference||"both";}
+function cancelEdit(){fill(saved);setEdit(false);}
+async function load(){const r=await api("profile/get.php","GET");if(r.success)fill(r.data.user);}
+async function save(){
+  const g=i=>document.getElementById(i).value;const b={name:g("name"),department:g("department"),year:g("year"),bio:g("bio"),mode_preference:g("mode")};
+  const r=await api("profile/update.php","POST",b);showToast(r.message,r.success?"success":"error");if(r.success){await load();setEdit(false);}
+}
+async function changePw(){
+  const g=i=>document.getElementById(i);
+  if(g("new1").value!==g("new2").value){showToast("New passwords do not match.","error");return;}
+  const r=await api("profile/password.php","POST",{current_password:g("cur").value,new_password:g("new1").value});
+  showToast(r.message,r.success?"success":"error");if(r.success){g("cur").value=g("new1").value=g("new2").value="";}
+}
+function init(){load();}
+async function boot(){initTheme();const r=await api("auth/me.php","GET");if(!r.success){location.href="login.html";return;}const u=r.data.user||r.data;if(u.onboarding_complete==0){location.href="onboarding.html";return;}init(u);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"\x27]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[c]));}
+boot();
+</script></body></html>

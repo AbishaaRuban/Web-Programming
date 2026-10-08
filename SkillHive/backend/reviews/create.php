@@ -1,0 +1,23 @@
+<?php
+require_once __DIR__ . '/../config/db.php';
+$db = $pdo ?? ($conn ?? null);
+$userId = requireAuth();
+$body = getJsonBody();
+$sid = (int)($body['session_id'] ?? 0);
+$rating = (int)($body['rating'] ?? 0);
+$fb = trim($body['feedback'] ?? '');
+if (!$sid || $rating < 1 || $rating > 5) respond(false, null, 'Choose a star rating from 1 to 5.');
+if (strlen($fb) > 1000) respond(false, null, 'Feedback is too long (max 1000 characters).');
+$st = $db->prepare("SELECT teacher_id, learner_id, status FROM sessions WHERE id = ?");
+$st->execute([$sid]);
+$s = $st->fetch(PDO::FETCH_ASSOC);
+if (!$s) respond(false, null, 'Session not found.');
+if ($s['status'] !== 'completed') respond(false, null, 'You can only review completed sessions.');
+if ($userId != $s['teacher_id'] && $userId != $s['learner_id']) respond(false, null, 'This is not your session.');
+$reviewee = ($userId == $s['teacher_id']) ? $s['learner_id'] : $s['teacher_id'];
+$st = $db->prepare("SELECT id FROM reviews WHERE session_id = ? AND reviewer_id = ?");
+$st->execute([$sid, $userId]);
+if ($st->fetch()) respond(false, null, 'You already reviewed this session.');
+$st = $db->prepare("INSERT INTO reviews (session_id, reviewer_id, reviewee_id, rating, feedback) VALUES (?, ?, ?, ?, ?)");
+$st->execute([$sid, $userId, $reviewee, $rating, $fb]);
+respond(true, null, 'Review submitted. Thank you!');

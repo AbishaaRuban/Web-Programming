@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reviews - SkillHive</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.navbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;flex-wrap:wrap;gap:10px}
+.navbar-links{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.navbar-links a{text-decoration:none;color:var(--text-color)}
+.navbar-links a.active{color:var(--primary)}
+.page{max-width:900px;margin:30px auto;padding:0 16px}
+.page .card{margin-bottom:18px}
+.stars button{background:none;border:0;font-size:30px;cursor:pointer;color:var(--border-color);padding:0 2px}
+.stars button.on{color:#f5b301}
+.item{padding:12px 0;border-bottom:1px solid var(--border-color)}
+.item:last-child{border-bottom:0}
+.muted{color:var(--text-muted)}
+.hl{border:1px solid var(--primary);border-radius:8px;padding:12px}
+</style>
+</head>
+<body>
+<nav class="navbar">
+  <a class="navbar-brand" href="dashboard.html">SkillHive</a>
+  <div class="navbar-links">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="matches.html">Matches</a>
+    <a href="skills.html">My Skills</a>
+    <a href="connections.html">Connections</a>
+    <a href="sessions.html">Sessions</a>
+    <a href="reviews.html" class="active">Reviews</a>
+    <a href="profile.html">Profile</a>
+    <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+    <button class="btn btn-outline" onclick="logout()">Logout</button>
+  </div>
+</nav>
+<div id="toast-container"></div>
+
+<div class="page">
+  <h1>Reviews</h1>
+  <div class="card"><h2>Waiting for your review</h2><div id="pending">Loading...</div></div>
+  <div class="card">
+    <div class="flex-between"><h2>Reviews about you</h2><span id="avg" class="badge"></span></div>
+    <div id="received">Loading...</div>
+  </div>
+  <div class="card"><h2>Reviews you wrote</h2><div id="given">Loading...</div></div>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+const sid=new URLSearchParams(location.search).get("session");
+const R={};
+const stars=n=>"★".repeat(n)+"☆".repeat(5-n);
+
+function esc(s){return String(s==null?"":s).replace(/[&<>"\x27]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[c]));}
+
+function setRating(id,n){
+  R[id]=n;
+  document.querySelectorAll("#st"+id+" button").forEach((b,i)=>b.classList.toggle("on",i<n));
+}
+
+async function submitReview(id){
+  if(!R[id]){showToast("Choose a star rating first.","error");return;}
+  const res=await api("reviews/create.php","POST",{
+    session_id:id,
+    rating:R[id],
+    feedback:document.getElementById("fb"+id).value
+  });
+  showToast(res.message,res.success?"success":"error");
+  if(res.success)load();
+}
+
+function list(items,empty){
+  if(!items.length)return '<div class="empty-state">'+empty+'</div>';
+  return items.map(r=>
+    '<div class="item"><div class="flex-between"><strong>'+esc(r.person)+'</strong><span style="color:#f5b301">'+stars(+r.rating)+'</span></div>'
+    +'<div class="muted">'+esc(r.skill)+' · '+esc(String(r.created_at).slice(0,10))+'</div>'
+    +(r.feedback?'<p>'+esc(r.feedback)+'</p>':'')+'</div>'
+  ).join("");
+}
+
+async function load(){
+  const [p,l]=await Promise.all([api("reviews/pending.php","GET"),api("reviews/list.php","GET")]);
+  const pend=(p.data&&p.data.pending)||[];
+  document.getElementById("pending").innerHTML=pend.length?pend.map(s=>
+    '<div class="item'+(sid==s.id?' hl':'')+'" id="p'+s.id+'">'
+    +'<strong>'+esc(s.skill)+'</strong> with '+esc(s.other_name)+' <span class="muted">('+esc(s.session_date)+')</span>'
+    +'<div class="stars" id="st'+s.id+'">'+[1,2,3,4,5].map(n=>'<button type="button" onclick="setRating('+s.id+','+n+')">★</button>').join("")+'</div>'
+    +'<div class="form-group"><textarea id="fb'+s.id+'" rows="2" placeholder="Write a short review (optional)" style="width:100%"></textarea></div>'
+    +'<button class="btn btn-primary btn-sm" onclick="submitReview('+s.id+')">Submit review</button></div>'
+  ).join(""):'<div class="empty-state">Nothing to review right now. Complete a session first.</div>';
+
+  const d=l.data||{received:[],given:[],average:null};
+  document.getElementById("avg").textContent=d.average?("Average "+d.average+" / 5"):"No ratings yet";
+  document.getElementById("received").innerHTML=list(d.received||[],"No one has reviewed you yet.");
+  document.getElementById("given").innerHTML=list(d.given||[],"You have not written any reviews yet.");
+  if(sid){const el=document.getElementById("p"+sid);if(el)el.scrollIntoView({behavior:"smooth"});}
+}
+
+async function boot(){
+  initTheme();
+  const r=await api("auth/me.php","GET");
+  if(!r.success){location.href="login.html";return;}
+  const u=r.data.user||r.data;
+  if(u.onboarding_complete==0){location.href="onboarding.html";return;}
+  load();
+}
+boot();
+</script>
+</body>
+</html>

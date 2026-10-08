@@ -1,0 +1,30 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Welcome - SkillHive</title><link rel="stylesheet" href="css/style.css"><style>.navbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;flex-wrap:wrap;gap:10px}.navbar-links{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.navbar-links a{text-decoration:none;color:var(--text-color)}.navbar-links a.active{color:var(--primary)}.page{max-width:900px;margin:30px auto;padding:0 16px}.page .card{margin-bottom:18px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row>*{flex:1;min-width:140px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}.big{font-size:28px;font-weight:700}.tabs{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap}.item{padding:12px 0;border-bottom:1px solid var(--border-color)}.item:last-child{border-bottom:0}.muted{color:var(--text-muted)}.chip{display:inline-block;padding:4px 10px;margin:3px;border:1px solid var(--border-color);border-radius:20px;font-size:13px}.chip button{background:none;border:0;color:var(--danger);cursor:pointer}</style></head><body>
+<nav class="navbar"><span class="navbar-brand">SkillHive</span><div class="navbar-links"><button class="theme-toggle" onclick="toggleTheme()">🌓</button><button class="btn btn-outline" onclick="logout()">Logout</button></div></nav><div id="toast-container"></div>
+<div class="page"><h1>Set up your profile</h1><p class="muted">Tell us what you can teach and what you want to learn. We use this to find your matches.</p>
+<div class="card"><h2>About you</h2>
+<div class="row"><div class="form-group"><label>Department</label><input id="dept" style="width:100%"></div><div class="form-group"><label>Year</label><input id="year" placeholder="e.g. 2nd year" style="width:100%"></div></div>
+<div class="form-group"><label>Preferred mode</label><select id="mode" style="width:100%"><option value="online">Online</option><option value="in-person">In person</option><option value="both">Both</option></select></div>
+<div class="form-group"><label>Short bio</label><textarea id="bio" rows="3" style="width:100%"></textarea></div></div>
+<div class="card"><h2>Skills I can teach</h2><div id="tList"></div>
+<div class="row" style="margin-top:10px"><input id="tName" list="dl" placeholder="e.g. Java" oninput="suggest(this.value)" autocomplete="off"><select id="tLevel"><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select><button class="btn btn-outline" onclick="addT()">Add</button></div></div>
+<div class="card"><h2>Skills I want to learn</h2><div id="lList"></div>
+<div class="row" style="margin-top:10px"><input id="lName" list="dl" placeholder="e.g. Python" oninput="suggest(this.value)" autocomplete="off"><select id="lLevel"><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select><select id="lPrio"><option>Low</option><option selected>Medium</option><option>High</option></select><button class="btn btn-outline" onclick="addL()">Add</button></div></div>
+<datalist id="dl"></datalist>
+<button class="btn btn-primary" onclick="save()">Finish setup</button></div>
+<script src="js/common.js"></script><script>
+let T=[],L=[],timer;
+function esc(s){return String(s==null?"":s).replace(/[&<>"\x27]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[c]));}
+function suggest(q){clearTimeout(timer);if(!q.trim())return;timer=setTimeout(async()=>{const r=await api("skills/search.php?q="+encodeURIComponent(q),"GET");const a=Array.isArray(r.data)?r.data:[];document.getElementById("dl").innerHTML=a.map(x=>'<option value="'+esc(x)+'">').join("");},250);}
+function draw(){
+  document.getElementById("tList").innerHTML=T.map((s,i)=>'<span class="chip">'+esc(s.name)+' · '+s.level+' <button onclick="T.splice('+i+',1);draw()">x</button></span>').join("")||'<span class="muted">None added yet</span>';
+  document.getElementById("lList").innerHTML=L.map((s,i)=>'<span class="chip">'+esc(s.name)+' · '+s.target_level+' · '+s.priority+' <button onclick="L.splice('+i+',1);draw()">x</button></span>').join("")||'<span class="muted">None added yet</span>';
+}
+function addT(){const n=document.getElementById("tName").value.trim();if(!n)return;T=T.filter(x=>x.name.toLowerCase()!==n.toLowerCase());T.push({name:n,level:document.getElementById("tLevel").value});document.getElementById("tName").value="";draw();}
+function addL(){const n=document.getElementById("lName").value.trim();if(!n)return;L=L.filter(x=>x.name.toLowerCase()!==n.toLowerCase());L.push({name:n,target_level:document.getElementById("lLevel").value,priority:document.getElementById("lPrio").value});document.getElementById("lName").value="";draw();}
+async function save(){
+  if(document.getElementById("tName").value.trim())addT();if(document.getElementById("lName").value.trim())addL();
+  const r=await api("onboarding/save.php","POST",{department:document.getElementById("dept").value,year:document.getElementById("year").value,bio:document.getElementById("bio").value,mode_preference:document.getElementById("mode").value,teach:T,learn:L});
+  showToast(r.message,r.success?"success":"error");if(r.success)setTimeout(()=>location.href="dashboard.html",600);
+}
+(async function(){initTheme();const r=await api("auth/me.php","GET");if(!r.success){location.href="login.html";return;}draw();})();
+</script></body></html>

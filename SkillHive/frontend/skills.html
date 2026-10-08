@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>My Skills - SkillHive</title>
+<link rel="stylesheet" href="css/style.css">
+<style>.navbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;flex-wrap:wrap;gap:10px}.navbar-links{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.navbar-links a{text-decoration:none;color:var(--text-color)}.navbar-links a.active{color:var(--primary)}.page{max-width:900px;margin:30px auto;padding:0 16px}.page .card{margin-bottom:18px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row>*{flex:1;min-width:140px}.stars button{background:none;border:0;font-size:30px;cursor:pointer;color:var(--border-color);padding:0 2px}.stars button.on{color:#f5b301}.item{padding:12px 0;border-bottom:1px solid var(--border-color)}.item:last-child{border-bottom:0}.muted{color:var(--text-muted)}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border-color);font-size:14px}.hl{border-color:var(--primary)!important}</style>
+</head><body>
+<nav class="navbar"><a class="navbar-brand" href="dashboard.html">SkillHive</a><div class="navbar-links">
+<a href="dashboard.html">Dashboard</a><a href="matches.html">Matches</a><a href="skills.html" class="active">My Skills</a><a href="connections.html">Connections</a><a href="sessions.html">Sessions</a><a href="reviews.html">Reviews</a><a href="profile.html">Profile</a>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button><button class="btn btn-outline" onclick="logout()">Logout</button></div></nav>
+<div id="toast-container"></div>
+<div class="page">
+<h1>My Skills</h1>
+<div class="card"><h2>Skills I can teach</h2><div id="teach">Loading...</div>
+ <div class="row" style="margin-top:14px"><input id="tName" list="dl" placeholder="Skill name, e.g. Java" oninput="suggest(this.value)" autocomplete="off">
+ <select id="tLevel"><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select>
+ <button class="btn btn-primary" onclick="addSkill('teach')">Add skill</button></div></div>
+<div class="card"><h2>Skills I want to learn</h2><div id="learn">Loading...</div>
+ <div class="row" style="margin-top:14px"><input id="lName" list="dl" placeholder="Skill name, e.g. Python" oninput="suggest(this.value)" autocomplete="off">
+ <select id="lLevel"><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select>
+ <select id="lPrio"><option>Low</option><option selected>Medium</option><option>High</option></select>
+ <button class="btn btn-primary" onclick="addSkill('learn')">Add goal</button></div></div>
+<datalist id="dl"></datalist>
+</div>
+<script src="js/common.js"></script>
+<script>
+const LV=["Beginner","Intermediate","Advanced"],PR=["Low","Medium","High"];
+const opts=(arr,sel)=>arr.map(o=>'<option'+(o===sel?' selected':'')+'>'+o+'</option>').join("");
+let timer;
+function suggest(q){clearTimeout(timer);if(q.trim().length<1)return;timer=setTimeout(async()=>{const r=await api("skills/search.php?q="+encodeURIComponent(q),"GET");let items=(r.data&&(r.data.skills||r.data))||[];if(!Array.isArray(items))items=[];document.getElementById("dl").innerHTML=items.map(x=>'<option value="'+esc(x.name||x)+'">').join("");},250);}
+async function addSkill(type,name,level,prio){
+  const body=type==="teach"?{type,name:name||document.getElementById("tName").value,level:level||document.getElementById("tLevel").value}:{type,name:name||document.getElementById("lName").value,level:level||document.getElementById("lLevel").value,priority:prio||document.getElementById("lPrio").value};
+  const r=await api("skills/add.php","POST",body);
+  showToast(r.message,r.success?"success":"error");
+  if(r.success){if(!name){document.getElementById(type==="teach"?"tName":"lName").value="";}load();}
+}
+async function removeItem(type,id){if(!confirm("Remove this?"))return;const r=await api("skills/remove.php","POST",{type,id});showToast(r.message,r.success?"success":"error");load();}
+async function load(){
+  const r=await api("skills/mine.php","GET");const d=r.data||{teach:[],learn:[]};
+  document.getElementById("teach").innerHTML=d.teach.length?d.teach.map(s=>'<div class="item flex-between"><strong>'+esc(s.name)+'</strong><span class="flex-gap"><select onchange="addSkill(\'teach\',\''+esc(s.name).replace(/'/g,"\\'")+'\',this.value)">'+opts(LV,s.level)+'</select> <button class="btn btn-danger-outline btn-sm" onclick="removeItem(\'teach\','+s.id+')">Remove</button></span></div>').join(""):'<div class="empty-state">You have not added a skill to teach yet.</div>';
+  document.getElementById("learn").innerHTML=d.learn.length?d.learn.map(s=>'<div class="item flex-between"><span><strong>'+esc(s.name)+'</strong> <span class="badge">'+esc(s.target_level)+'</span> <span class="badge">'+esc(s.priority)+' priority</span></span><button class="btn btn-danger-outline btn-sm" onclick="removeItem(\'learn\','+s.id+')">Remove</button></div>').join(""):'<div class="empty-state">You have not added a learning goal yet.</div>';
+}
+function init(){load();}
+async function boot(){initTheme();const r=await api("auth/me.php","GET");if(!r.success){location.href="login.html";return;}const u=r.data.user||r.data;if(u.onboarding_complete==0){location.href="onboarding.html";return;}init(u);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"\x27]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[c]));}
+boot();
+</script></body></html>

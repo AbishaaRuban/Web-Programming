@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Admin - SkillHive</title>
+<link rel="stylesheet" href="css/style.css">
+<style>.navbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;flex-wrap:wrap;gap:10px}.navbar-links{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.navbar-links a{text-decoration:none;color:var(--text-color)}.navbar-links a.active{color:var(--primary)}.page{max-width:900px;margin:30px auto;padding:0 16px}.page .card{margin-bottom:18px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row>*{flex:1;min-width:140px}.stars button{background:none;border:0;font-size:30px;cursor:pointer;color:var(--border-color);padding:0 2px}.stars button.on{color:#f5b301}.item{padding:12px 0;border-bottom:1px solid var(--border-color)}.item:last-child{border-bottom:0}.muted{color:var(--text-muted)}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--border-color);font-size:14px}.hl{border-color:var(--primary)!important}</style>
+</head><body>
+<nav class="navbar"><a class="navbar-brand" href="dashboard.html">SkillHive</a><div class="navbar-links">
+<a href="dashboard.html">Dashboard</a><a href="matches.html">Matches</a><a href="skills.html">My Skills</a><a href="connections.html">Connections</a><a href="sessions.html">Sessions</a><a href="reviews.html">Reviews</a><a href="profile.html">Profile</a>
+<button class="theme-toggle" onclick="toggleTheme()">🌓</button><button class="btn btn-outline" onclick="logout()">Logout</button></div></nav>
+<div id="toast-container"></div>
+<div class="page" style="max-width:1000px">
+<h1>Admin dashboard</h1>
+<div class="card"><div id="stats" class="flex-gap">Loading...</div></div>
+<div class="card"><h2>Users</h2><div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Role</th><th></th></tr></thead><tbody id="users"></tbody></table></div></div>
+<div class="card"><h2>Skills</h2><div style="overflow-x:auto"><table><thead><tr><th>Skill</th><th>Teachers</th><th>Learners</th><th></th></tr></thead><tbody id="skills"></tbody></table></div></div>
+</div>
+<script src="js/common.js"></script>
+<script>
+async function act(action,id,label){if(!confirm("Delete "+label+"? This cannot be undone."))return;const r=await api("admin/action.php","POST",{action,id});showToast(r.message,r.success?"success":"error");load();}
+async function load(){
+  const r=await api("admin/data.php","GET");
+  if(!r.success){showToast(r.message||"Admins only.","error");setTimeout(()=>location.href="dashboard.html",1200);return;}
+  const d=r.data,s=d.stats;
+  document.getElementById("stats").innerHTML=[["Users",s.users],["Skills",s.skills],["Sessions",s.sessions],["Reviews",s.reviews]].map(x=>'<span class="badge">'+x[0]+': '+x[1]+'</span>').join(" ");
+  document.getElementById("users").innerHTML=d.users.map(u=>'<tr><td>'+esc(u.name)+'</td><td>'+esc(u.email)+'</td><td>'+esc(u.department)+'</td><td>'+esc(u.role)+'</td><td>'+(u.role==="admin"?'':'<button class="btn btn-danger-outline btn-sm" onclick="act(\'delete_user\','+u.id+',\''+esc(u.name).replace(/'/g,"")+'\')">Delete</button>')+'</td></tr>').join("");
+  document.getElementById("skills").innerHTML=d.skills.map(k=>'<tr><td>'+esc(k.name)+'</td><td>'+k.teachers+'</td><td>'+k.learners+'</td><td><button class="btn btn-danger-outline btn-sm" onclick="act(\'delete_skill\','+k.id+',\''+esc(k.name).replace(/'/g,"")+'\')">Delete</button></td></tr>').join("");
+}
+function init(){load();}
+async function boot(){initTheme();const r=await api("auth/me.php","GET");if(!r.success){location.href="login.html";return;}const u=r.data.user||r.data;if(u.onboarding_complete==0){location.href="onboarding.html";return;}init(u);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"\x27]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[c]));}
+boot();
+</script></body></html>

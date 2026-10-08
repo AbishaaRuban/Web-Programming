@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - SkillHive</title>
+
+<link rel="stylesheet" href="../css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Lora:ital,wght@1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{--p:#3368A0;--p2:#66A3BF;--mint:#C8DFDB;--cream:#F2EFE7;--lcard:#fff;--ltext:#1e3a5c;--lmuted:#5b7088;--lline:#d9e3e1}
+:root[data-theme="dark"]{--cream:#172a3d;--lcard:#1f364d;--ltext:#eaf2f1;--lmuted:#a9bfc4;--lline:#34506a}
+*{box-sizing:border-box}
+body{margin:0;padding:0;font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ltext)}
+.hide{display:none!important}
+.auth-wrap{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr}
+.left{position:relative;overflow:hidden;color:#fff;padding:34px 6vw;display:flex;flex-direction:column;justify-content:center;background:linear-gradient(155deg,#3368A0 0%,#2f6199 60%,#2a5788 100%);--hx:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34.64' height='60' viewBox='0 0 34.64 60'%3E%3Cpath d='M0 10L17.32 0L34.64 10M0 10V30M34.64 10V30M0 30L17.32 40L34.64 30M17.32 40V60' fill='none' stroke='%23C8DFDB' stroke-width='1.6'/%3E%3C/svg%3E")}
+.hive{position:absolute;inset:0;background-image:var(--hx);background-size:56px 97px;opacity:.28;-webkit-mask-image:radial-gradient(circle 170px at var(--mx,-300px) var(--my,-300px),#000,transparent);mask-image:radial-gradient(circle 170px at var(--mx,-300px) var(--my,-300px),#000,transparent)}
+.content{position:relative;z-index:2;max-width:520px;width:100%}
+.brand{display:flex;align-items:center;gap:16px;margin-bottom:22px}
+.logo{width:92px;height:auto;flex:none;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 6px rgba(255,255,255,.7)) drop-shadow(0 8px 14px rgba(10,30,60,.3));transition:transform .15s ease-out;cursor:pointer}
+.logo.pop{animation:pop .5s}
+@keyframes pop{40%{transform:scale(1.1) rotate(-6deg)}}
+.word h1{font-family:'Outfit',sans-serif;font-weight:800;font-size:2.3rem;line-height:1;margin:0;color:#fff}
+.word h1 span{color:var(--mint)}
+.word p{margin:6px 0 0;font-size:.95rem;font-weight:600;color:var(--mint);letter-spacing:.06em}
+.tag{font-size:1.08rem;line-height:1.6;font-weight:500;color:#eef5f4;margin:0 0 24px}
+.tabs{position:relative;display:inline-flex;gap:2px;padding:4px;margin-bottom:12px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(200,223,219,.35)}
+.thumb{position:absolute;top:4px;bottom:4px;left:4px;width:0;border-radius:999px;background:var(--cream);transition:left .3s cubic-bezier(.4,1.4,.6,1),width .3s}
+.tab{position:relative;z-index:1;display:flex;align-items:center;gap:6px;padding:7px 15px;border:0;border-radius:999px;background:transparent;cursor:pointer;font:600 .85rem 'Inter',sans-serif;color:#fff;transition:color .25s}
+.tab.active{color:#3368A0}
+.tabbody{background:rgba(255,255,255,.1);border:1px solid rgba(200,223,219,.3);border-radius:14px;padding:16px 20px;min-height:92px;line-height:1.6;margin-bottom:20px;transition:opacity .25s,transform .25s}
+.tabbody b{color:var(--mint)}
+.quote{background:rgba(255,255,255,.1);border:1px solid rgba(200,223,219,.3);border-radius:14px;padding:20px 24px;min-height:150px;transition:opacity .4s,transform .4s}
+.quote.out{opacity:0;transform:translateX(10px)}
+.qmark{font-family:Georgia,serif;font-size:2.2rem;line-height:1;color:var(--mint);display:block;margin-bottom:6px}
+.quote p{font-family:'Lora',Georgia,serif;font-style:italic;font-size:1.12rem;line-height:1.6;margin:0}
+.quote small{display:block;margin-top:10px;color:var(--mint);font-size:.9rem;font-weight:600}
+.dots{display:flex;gap:6px;margin-top:14px}
+.dot{width:8px;height:8px;border-radius:8px;background:rgba(255,255,255,.4);cursor:pointer;transition:.3s}
+.dot.on{width:24px;background:var(--mint)}
+.dwrap{position:absolute;z-index:1;pointer-events:none;transition:transform .25s ease-out}
+.doodle{display:block;width:54px;height:54px;fill:none;stroke:var(--mint);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.35;animation:fl 9s ease-in-out infinite}
+@keyframes fl{50%{transform:translateY(-9px) rotate(4deg)}}
+.auth-panel{display:grid;place-items:center;padding:32px}
+.auth-card{width:100%;max-width:400px;background:var(--lcard);border:1px solid var(--lline);border-radius:22px;padding:34px;box-shadow:0 18px 50px rgba(51,104,160,.12);animation:fadeUp .5s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.auth-card h2{font-family:'Outfit',sans-serif;font-size:27px;font-weight:700;text-align:center;margin:0 0 6px;color:var(--ltext)}
+.sub{color:var(--lmuted);margin:0 0 20px;text-align:center}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--cream);border:1px solid var(--lline);border-radius:12px;padding:4px;margin-bottom:14px}
+.seg button{border:0;background:transparent;padding:10px;border-radius:9px;font:inherit;font-weight:600;color:var(--lmuted);cursor:pointer;transition:.2s}
+.seg button.on{background:var(--p);color:#fff}
+.ul{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--lline);margin-bottom:6px}
+.ul button{border:0;background:transparent;padding:10px;font:inherit;font-weight:600;color:var(--lmuted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.ul button.on{color:var(--p);border-color:var(--p)}
+.field{position:relative;margin-bottom:4px}
+.field label{display:block;font-weight:600;font-size:13px;margin:14px 0 6px;color:var(--ltext)}
+.auth-card input{width:100%;padding:12px 14px;border:1.5px solid var(--lline);border-radius:10px;background:var(--cream);color:var(--ltext);font:inherit}
+.auth-card input:focus{border-color:var(--p2);outline:0;box-shadow:0 0 0 3px rgba(102,163,191,.3)}
+.show-btn{position:absolute;right:10px;bottom:11px;background:none;border:0;color:var(--p);cursor:pointer;font-weight:600}
+.meter{height:6px;border-radius:6px;background:var(--lline);margin-top:8px;overflow:hidden}
+.meter div{height:100%;width:0;transition:.3s}
+.small{font-size:13px;color:var(--lmuted);margin-top:4px}
+.go{width:100%;margin-top:20px;padding:13px;border:0;border-radius:12px;background:var(--p);color:#fff;font:inherit;font-weight:700;font-size:16px;cursor:pointer;transition:.2s}
+.go:hover{background:#2b5a8c;transform:translateY(-2px);box-shadow:0 8px 18px rgba(51,104,160,.35)}
+.link{color:var(--p);text-decoration:none;font-size:14px;font-weight:600}
+.note{padding:12px;border:1px dashed var(--lline);border-radius:10px;font-size:14px;color:var(--lmuted);margin:14px 0 4px}
+@media(max-width:860px){.auth-wrap{grid-template-columns:1fr}.left{padding:28px 22px}.dwrap{display:none}}
+@media(prefers-reduced-motion:reduce){.doodle,.logo.pop{animation:none}}
+</style>
+
+</head>
+
+<body>
+<div id="toast-container"></div>
+
+<div class="auth-wrap">
+  <div class="left" id="panel">
+    <div class="hive"></div>
+
+```
+<div class="dwrap" data-d="30" style="top:6%;right:7%">
+  <svg class="doodle" viewBox="0 0 64 64">
+    <path d="M32 6v4M12 16l3 3M52 16l-3 3M20 34a12 12 0 1 1 24 0c0 5-4 7-4 12H24c0-5-4-7-4-12zM25 52h14M27 58h10"/>
+  </svg>
+</div>
+
+<div class="dwrap" data-d="-24" style="bottom:7%;right:9%">
+  <svg class="doodle" viewBox="0 0 64 64">
+    <path d="M32 8l7 16 17 2-13 12 4 17-15-9-15 9 4-17L8 26l17-2z"/>
+  </svg>
+</div>
+
+<div class="dwrap" data-d="20" style="bottom:6%;left:4%">
+  <svg class="doodle" viewBox="0 0 64 64">
+    <path d="M8 14c8-3 17-2 24 4 7-6 16-7 24-4v34c-8-3-17-2-24 4-7-6-16-7-24-4zM32 18v34"/>
+  </svg>
+</div>
+
+<div class="content">
+  <div class="brand">
+    <img class="logo" id="logo" src="../images/logo.png" alt="SkillHive logo">
+    <div class="word">
+      <h1>Skill<span>Hive</span></h1>
+      <p>Learn. Share. Grow.</p>
+    </div>
+  </div>
+
+  <p class="tag">Teach what you know. Learn what you love. A skill exchange built for college students.</p>
+
+  <div class="tabs" id="tabs">
+    <div class="thumb" id="thumb"></div>
+    <button class="tab active" data-i="0">🧩 Match</button>
+    <button class="tab" data-i="1">🗓️ Schedule</button>
+    <button class="tab" data-i="2">🌟 Review</button>
+  </div>
+
+  <div class="tabbody" id="tabbody"></div>
+
+  <div class="quote" id="quote">
+    <span class="qmark">“</span>
+    <p id="qt"></p>
+    <small id="qa"></small>
+  </div>
+
+  <div class="dots" id="dots"></div>
+</div>
+```
+
+  </div>
+
+  <div class="auth-panel">
+    <div class="auth-card">
+      <h2 id="title">Student login</h2>
+      <p class="sub">Log in to swap skills with your classmates.</p>
+
+```
+  <div class="seg">
+    <button id="tabStudent" class="on" onclick="setRole('student')">Student</button>
+    <button id="tabAdmin" onclick="setRole('admin')">Admin</button>
+  </div>
+
+  <div class="ul" id="modeTabs">
+    <button id="mLogin" class="on" onclick="setMode('login')">Login</button>
+    <button id="mSignup" onclick="setMode('signup')">Sign Up</button>
+  </div>
+
+  <div id="adminNote" class="note hide">
+    Administrator accounts cannot be created here. They are given only by an existing administrator.
+  </div>
+
+  <div id="loginBox">
+    <div class="field">
+      <label>Email</label>
+      <input id="lEmail" type="email" placeholder="Enter mail">
+    </div>
+
+    <div class="field">
+      <label>Password</label>
+      <input id="lPass" type="password" placeholder="Your password">
+      <button type="button" class="show-btn" onclick="toggle('lPass',this)">Show</button>
+    </div>
+
+    <div style="text-align:right;margin-top:12px">
+      <a class="link" href="forgot.html">Forgot password?</a>
+    </div>
+
+    <button class="go" onclick="doLogin()">Login</button>
+  </div>
+
+  <div id="signupBox" class="hide">
+    <div class="field">
+      <label>Full name</label>
+      <input id="sName" placeholder="Your name">
+    </div>
+
+    <div class="field">
+      <label>Email</label>
+      <input id="sEmail" type="email" placeholder="Enter mail">
+    </div>
+
+    <div class="field">
+      <label>Password</label>
+      <input id="sPass" type="password" placeholder="At least 8 characters" oninput="meter()">
+      <button type="button" class="show-btn" style="bottom:48px" onclick="toggle('sPass',this)">Show</button>
+
+      <div class="meter">
+        <div id="bar"></div>
+      </div>
+
+      <div class="small" id="barText">
+        Use 8+ characters with letters, numbers and a symbol.
+      </div>
+    </div>
+
+    <button class="go" onclick="doSignup()">Create account</button>
+  </div>
+</div>
+```
+
+  </div>
+</div>
+
+<script src="../js/common.js"></script>
+
+<script>
+var role='student',mode='login';
+
+function $(i){
+  return document.getElementById(i);
+}
+
+function view(){
+  var signup=(role==='student'&&mode==='signup');
+
+  $('tabStudent').classList.toggle('on',role==='student');
+  $('tabAdmin').classList.toggle('on',role==='admin');
+  $('modeTabs').classList.toggle('hide',role==='admin');
+  $('adminNote').classList.toggle('hide',role!=='admin');
+  $('loginBox').classList.toggle('hide',signup);
+  $('signupBox').classList.toggle('hide',!signup);
+  $('mLogin').classList.toggle('on',mode==='login');
+  $('mSignup').classList.toggle('on',mode==='signup');
+
+  $('title').textContent=
+    role==='admin'
+      ?'Admin login'
+      :(signup?'Create your account':'Student login');
+}
+
+function setRole(r){
+  role=r;
+  if(r==='admin') mode='login';
+  view();
+}
+
+function setMode(m){
+  mode=m;
+  view();
+}
+
+function toggle(id,btn){
+  var i=$(id);
+  var show=i.type==='password';
+  i.type=show?'text':'password';
+  btn.textContent=show?'Hide':'Show';
+}
+
+function meter(){
+  var p=$('sPass').value,s=0;
+
+  if(p.length>=8)s++;
+  if(/[A-Z]/.test(p)&&/[a-z]/.test(p))s++;
+  if(/\d/.test(p))s++;
+  if(/[^A-Za-z0-9]/.test(p))s++;
+
+  var colors=['#ef4444','#ef4444','#f59e0b','#22c55e','#16a34a'];
+  var names=['Too weak','Weak','Okay','Good','Strong'];
+
+  $('bar').style.width=(s*25)+'%';
+  $('bar').style.background=colors[s];
+  $('barText').textContent=
+    p?names[s]:'Use 8+ characters with letters, numbers and a symbol.';
+}
+
+async function doLogin(){
+  var email=$('lEmail').value.trim();
+  var password=$('lPass').value;
+
+  if(!email||!password){
+    showToast('Enter your email and password.','error');
+    return;
+  }
+
+  var r=await api(
+    'auth/login.php',
+    'POST',
+    {
+      email:email,
+      password:password,
+      login_type:role
+    }
+  );
+
+  showToast(r.message,r.success?'success':'error');
+
+  if(r.success){
+    location.href=(r.data&&r.data.redirect)||'../dashboard/dashboard.html';
+  }
+}
+
+async function doSignup(){
+  var name=$('sName').value.trim();
+  var email=$('sEmail').value.trim();
+  var password=$('sPass').value;
+
+  if(!name||!email||!password){
+    showToast('Fill in all the fields.','error');
+    return;
+  }
+
+  var r=await api(
+    'auth/register.php',
+    'POST',
+    {
+      name:name,
+      email:email,
+      password:password
+    }
+  );
+
+  showToast(r.message,r.success?'success':'error');
+
+  if(r.success){
+    location.href=(r.data&&r.data.redirect)||'../onboarding/onboarding.html';
+  }
+}
+
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter')return;
+
+  if(!$('signupBox').classList.contains('hide')){
+    doSignup();
+  }else{
+    doLogin();
+  }
+});
+
+(async function(){
+  initTheme();
+
+  var r=await api('auth/me.php','GET');
+
+  if(r&&r.success){
+    var u=r.data.user||r.data;
+
+    location.href=
+      u.role==='admin'
+        ?'../admin/admin.html'
+        :(u.onboarding_complete==0
+          ?'../onboarding/onboarding.html'
+          :'../dashboard/dashboard.html');
+  }
+})();
+
+var steps=[
+  "<b>Smart matching.</b> We pair you with classmates who teach what you want to learn, and want to learn what you teach.",
+  "<b>Easy scheduling.</b> Pick a date and time, choose online or in-person, and share a meeting link.",
+  "<b>Honest reviews.</b> After each session, rate your partner and leave feedback to build trust."
+];
+
+var tabs=document.querySelectorAll('.tab'),
+tbody=$('tabbody'),
+thumb=$('thumb'),
+cur=0;
+
+function place(){
+  var t=tabs[cur];
+  thumb.style.left=t.offsetLeft+'px';
+  thumb.style.width=t.offsetWidth+'px';
+}
+
+function setTab(i){
+  cur=i;
+
+  tabs.forEach(function(t,k){
+    t.classList.toggle('active',k===i);
+  });
+
+  place();
+
+  tbody.style.opacity=0;
+  tbody.style.transform='translateY(6px)';
+
+  setTimeout(function(){
+    tbody.innerHTML=steps[i];
+    tbody.style.opacity=1;
+    tbody.style.transform='none';
+  },180);
+}
+
+tabs.forEach(function(t){
+  t.onclick=function(){
+    setTab(+t.dataset.i);
+  };
+});
+
+tbody.innerHTML=steps[0];
+
+window.addEventListener('load',place);
+window.addEventListener('resize',place);
+
+setTimeout(place,100);
+
+var Q=[
+  ["Education is the most powerful weapon which you can use to change the world.","Nelson Mandela"],
+  ["Learning gives creativity, creativity leads to thinking, thinking provides knowledge, and knowledge makes you great.","A. P. J. Abdul Kalam"],
+  ["If I have seen further, it is by standing on the shoulders of giants.","Isaac Newton"],
+  ["The beautiful thing about learning is that no one can take it away from you.","B. B. King"],
+  ["Education is the manifestation of the perfection already in man.","Swami Vivekananda"],
+  ["An investment in knowledge pays the best interest.","Benjamin Franklin"]
+];
+
+var q=0,hold=false,box=$('quote'),dots=$('dots');
+
+Q.forEach(function(_,k){
+  var d=document.createElement('div');
+  d.className='dot';
+  d.onclick=function(){
+    go(k);
+  };
+  dots.appendChild(d);
+});
+
+function render(){
+  $('qt').textContent='\u201C'+Q[q][0]+'\u201D';
+  $('qa').textContent='\u2014 '+Q[q][1];
+
+  Array.prototype.forEach.call(
+    dots.children,
+    function(d,k){
+      d.classList.toggle('on',k===q);
+    }
+  );
+
+  box.classList.remove('out');
+}
+
+function go(n){
+  box.classList.add('out');
+
+  setTimeout(function(){
+    q=(n+Q.length)%Q.length;
+    render();
+  },350);
+}
+
+box.onmouseenter=function(){
+  hold=true;
+};
+
+box.onmouseleave=function(){
+  hold=false;
+};
+
+render();
+
+setInterval(function(){
+  if(!hold)go(q+1);
+},6000);
+
+var panel=$('panel'),
+ws=panel.querySelectorAll('.dwrap'),
+logo=$('logo');
+
+panel.addEventListener('mousemove',function(e){
+  var r=panel.getBoundingClientRect(),
+  x=(e.clientX-r.left)/r.width-.5,
+  y=(e.clientY-r.top)/r.height-.5;
+
+  panel.style.setProperty('--mx',(e.clientX-r.left)+'px');
+  panel.style.setProperty('--my',(e.clientY-r.top)+'px');
+
+  ws.forEach(function(w){
+    var d=+w.dataset.d;
+    w.style.transform=
+      'translate('+x*d+'px,'+y*d+'px)';
+  });
+
+  logo.style.transform=
+    'perspective(500px) rotateY('+x*18+'deg) rotateX('+(-y*18)+'deg)';
+});
+
+panel.addEventListener('mouseleave',function(){
+  logo.style.transform='none';
+  panel.style.setProperty('--mx','-300px');
+});
+
+logo.onclick=function(){
+  logo.classList.remove('pop');
+  void logo.offsetWidth;
+  logo.classList.add('pop');
+};
+</script>
+
+</body>
+</html>
